@@ -50,8 +50,10 @@ ARO 4.18.34 (eastus), ACM 2.15.7 hub:
   with the discovered DES, `managed-csi` removed and not recreated.
 - Test PVC bound; the Azure disk reports `Premium_ZRS`,
   `EncryptionAtRestWithPlatformAndCustomerKeys`, and the cluster DES.
-- Only Reader on the DES was needed for the cluster SP (`az aro create` adds
-  the RP/SP role assignments on the DES itself during validation).
+- DES role assignments were Reader for the ARO RP and the cluster SP
+  (`az aro create` adds these itself). Note: in the test subscription the
+  cluster SP was also subscription Owner, so least-privilege (Reader only)
+  was not proven in isolation.
 
 ## Layout
 
