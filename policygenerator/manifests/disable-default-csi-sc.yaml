@@ -1,0 +1,9 @@
+# Tell the cluster-storage-operator to remove the stock `managed-csi`
+# StorageClass (and stop recreating it) so the CMK class is the only
+# Azure Disk class and the only default.
+apiVersion: operator.openshift.io/v1
+kind: ClusterCSIDriver
+metadata:
+  name: disk.csi.azure.com
+spec:
+  storageClassState: Removed

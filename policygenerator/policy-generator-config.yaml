@@ -1,0 +1,29 @@
+apiVersion: policy.open-cluster-management.io/v1
+kind: PolicyGenerator
+metadata:
+  name: openshift-encrypted-cmk-sc
+policyDefaults:
+  namespace: acm-config
+  remediationAction: enforce
+  complianceType: musthave
+  severity: medium
+  placement:
+    placementPath: placement.yaml
+  controls:
+    - "storage"
+  categories:
+    - "Platform"
+  standards:
+    - "ocp-standard"
+  orderManifests: false
+  evaluationInterval:
+    compliant: 10m
+    noncompliant: 60s
+policies:
+  - name: openshift-encrypted-cmk-sc-lab-policy
+    description: >-
+      Creates the default CMK-encrypted Azure Disk StorageClass (DES discovered
+      per cluster) and removes the stock managed-csi StorageClass on ARO.
+    manifests:
+      - path: ./manifests
+    recreateOption: IfRequired

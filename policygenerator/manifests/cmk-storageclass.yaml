@@ -1,0 +1,50 @@
+# ConfigurationPolicy used as-is by the PolicyGenerator.
+#
+# The diskEncryptionSetID is NOT hard-coded. At evaluation time on each
+# managed cluster the template looks up the cluster's own Machines and reads
+# the Disk Encryption Set that ARO used for the node OS disks
+# (az aro create --disk-encryption-set ...). One policy therefore works for
+# every ARO cluster, whatever its subscription/resource group.
+#
+# If no DES can be found the template calls `fail`, so the policy goes
+# NonCompliant with a clear message instead of creating a broken StorageClass.
+apiVersion: policy.open-cluster-management.io/v1
+kind: ConfigurationPolicy
+metadata:
+  name: aro-cmk-storageclass
+spec:
+  remediationAction: enforce
+  severity: medium
+  # Re-check quickly while NonCompliant (e.g. right after import, before the
+  # Machine objects are readable), slowly once compliant.
+  evaluationInterval:
+    compliant: 10m
+    noncompliant: 60s
+  object-templates-raw: |
+    {{- $des := "" }}
+    {{- range (lookup "machine.openshift.io/v1beta1" "Machine" "openshift-machine-api" "").items }}
+    {{-   if eq $des "" }}
+    {{-     $des = dig "spec" "providerSpec" "value" "osDisk" "managedDisk" "diskEncryptionSet" "id" "" . }}
+    {{-   end }}
+    {{- end }}
+    {{- if eq $des "" }}
+    {{-   fail "no diskEncryptionSet found on openshift-machine-api Machines; was the cluster created with --disk-encryption-set?" }}
+    {{- end }}
+    - complianceType: musthave
+      recreateOption: IfRequired   # StorageClass parameters are immutable
+      objectDefinition:
+        apiVersion: storage.k8s.io/v1
+        kind: StorageClass
+        metadata:
+          name: managed-csi-encrypted-cmk
+          annotations:
+            storageclass.kubernetes.io/is-default-class: "true"
+        provisioner: disk.csi.azure.com
+        parameters:
+          diskEncryptionSetID: '{{ $des }}'
+          diskEncryptionType: EncryptionAtRestWithPlatformAndCustomerKeys
+          kind: Managed
+          storageaccounttype: Premium_ZRS
+        reclaimPolicy: Delete
+        allowVolumeExpansion: true
+        volumeBindingMode: WaitForFirstConsumer
