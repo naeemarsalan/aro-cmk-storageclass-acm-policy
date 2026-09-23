@@ -22,7 +22,7 @@ az role assignment create --assignee-object-id "$ARO_RP" --assignee-principal-ty
 az aro create -g "$RG" -n "$CLUSTER" --vnet "$VNET" \
   --master-subnet master --worker-subnet worker \
   --disk-encryption-set "$DES_ID" \
-  --master-vm-size "${MASTER_VM_SIZE:-Standard_D8s_v5}" --worker-vm-size "${WORKER_VM_SIZE:-Standard_D4s_v5}" \
+  --master-vm-size "${MASTER_VM_SIZE:-Standard_D8s_v3}" --worker-vm-size "${WORKER_VM_SIZE:-Standard_D4s_v3}" \
   ${CLIENT_ID:+--client-id "$CLIENT_ID" --client-secret "$CLIENT_SECRET"} \
   ${PULL_SECRET:+--pull-secret @"$PULL_SECRET"}
 

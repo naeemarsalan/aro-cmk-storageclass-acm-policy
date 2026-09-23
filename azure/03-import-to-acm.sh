@@ -25,6 +25,9 @@ spec:
   hubAcceptsClient: true
 YAML
 
+# The hub creates the cluster namespace asynchronously.
+until oc get ns "$CLUSTER" >/dev/null 2>&1; do sleep 2; done
+
 oc create secret generic auto-import-secret -n "$CLUSTER" \
   --from-literal=autoImportRetry=5 --from-literal=server="$API" --from-literal=token="$TOKEN" \
   --dry-run=client -o yaml | oc apply -f -

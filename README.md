@@ -26,6 +26,33 @@ The same policy therefore works for 1 or 1,000 clusters with no per-cluster
 config. If no DES is found, the template calls `fail` and the policy reports
 **NonCompliant** with a clear message rather than creating a broken StorageClass.
 
+## What ARO does on its own vs. what the policy adds
+
+When ARO is created with `--disk-encryption-set`, the ARO installer already
+creates `managed-csi-encrypted-cmk` (default) and un-defaults `managed-csi` —
+once, at install time (no operator reconciles it). But that class is:
+
+| | ARO install-time | After this policy |
+|---|---|---|
+| `diskEncryptionSetID` | cluster DES | cluster DES (discovered) |
+| `diskEncryptionType` | *(unset → CMK only)* | `EncryptionAtRestWithPlatformAndCustomerKeys` |
+| `storageaccounttype` | `Premium_LRS` | `Premium_ZRS` |
+| `managed-csi` | present, non-default | removed |
+
+Because StorageClass parameters are immutable, the policy uses
+`recreateOption: IfRequired` to replace ARO's class with the desired one.
+
+## Tested
+
+ARO 4.18.34 (eastus), ACM 2.15.7 hub:
+
+- Import → policy Compliant in ~1 min; `managed-csi-encrypted-cmk` recreated
+  with the discovered DES, `managed-csi` removed and not recreated.
+- Test PVC bound; the Azure disk reports `Premium_ZRS`,
+  `EncryptionAtRestWithPlatformAndCustomerKeys`, and the cluster DES.
+- Only Reader on the DES was needed for the cluster SP (`az aro create` adds
+  the RP/SP role assignments on the DES itself during validation).
+
 ## Layout
 
 ```
